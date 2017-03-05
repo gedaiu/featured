@@ -264,7 +264,7 @@ unittest {
 
 @("it should detect two horizontal lines")
 unittest {
-	auto image = Image("samples/scene.png");
+	auto image = Image("samples/4.png");
 	image.writeln;
 
 	FeatureDetector detector;
