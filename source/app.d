@@ -199,12 +199,13 @@ struct FeatureDetector {
 		int prevY = points[0][1];
 
 		foreach(point; points) {
-			if(prevX == point[0] - 1 && prevY == point[1]) {
+			if(prevX == point[0] - 1 && prevY == point[1] && prevX - startX < 4) {
 				prevX = point[0];
 			} else {
 				list ~= point;
 				prevY = point[1];
 				prevX = point[0];
+				startX = point[0];
 			}
 		}
 
@@ -278,4 +279,22 @@ unittest {
 
 	features[1][0].should.be.equal(3);
 	features[1][1].should.be.equal(2);
+}
+
+@("it should split a long horizontal line in two features")
+unittest {
+	auto image = Image("samples/5.png");
+	image.writeln;
+
+	FeatureDetector detector;
+
+	auto features = detector.get(image);
+	features.writeln;
+
+	features.length.should.be.equal(2);
+	features[0][0].should.be.equal(1);
+	features[0][1].should.be.equal(1);
+
+	features[1][0].should.be.equal(6);
+	features[1][1].should.be.equal(1);
 }
