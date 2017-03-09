@@ -2,6 +2,8 @@ import std.stdio;
 import std.math;
 import std.algorithm;
 import std.array;
+import std.conv;
+import std.range;
 
 import imageformats;
 
@@ -180,36 +182,81 @@ struct Image {
 	}
 }
 
+
+
 struct FeatureDetector {
+	class Point {
+		int x;
+		int y;
+
+		Point[] links;
+
+		bool used = false;
+
+		this(int x, int y) {
+			this.x = x;
+			this.y = y;
+		}
+	}
 
 	int[2][] get(Image image) {
-		int[2][] points = [];
-		int[2][] list = [];
+		Point[] points;
+		int[2][] list;
+
+		bool isNeighbour(Point point, int x, int y) {
+			writeln(point.x ,"==", x + 1 ,"||", point.y ,"==", y + 1);
+
+			return point.x == x + 1 || point.x == x - 1 || point.y == y + 1 || point.y == y - 1;
+		}
+
+		int[2] lineEnd(ref Point point, int len = 0) {
+			point.x.writeln("?");
+			auto next = point.links.filter!(a => (a.x == point.x+1 && a.y == point.y) || (a.x == point.x && a.y == point.y+1));
+
+			point.used = true;
+
+			if(!next.empty && len < 3) {
+				return lineEnd(next.front, len+1);
+			}
+
+			return [point.x, point.y];
+		}
 
 		foreach(x; 0..image.width) {
 			foreach(y; 0..image.height) {
 				if(image[x, y][0] == 0) {
-					points ~= [x, y];
+					auto point = new Point(x, y);
+
+					writeln("#", x, ":", y);
+
+					auto neighbours = iota(0, points.length)
+						.filter!(i => isNeighbour(points[i], x, y))
+						.map!(i => points[i]).array;
+
+					neighbours.writeln;
+					neighbours.each!(a => a.links ~= point);
+
+					point.links = neighbours;
+					points ~= point;
 				}
 			}
 		}
 
-		int startX = points[0][0];
-		int prevX = points[0][0];
-		int prevY = points[0][1];
+		foreach(point; points.filter!(a => !a.used)) {
+			auto next = point.links.filter!(a => (a.x == point.x+1 && a.y == point.y) || (a.x == point.x && a.y == point.y+1));
 
-		foreach(point; points) {
-			if(prevX == point[0] - 1 && prevY == point[1] && prevX - startX < 4) {
-				prevX = point[0];
-			} else {
-				list ~= point;
-				prevY = point[1];
-				prevX = point[0];
-				startX = point[0];
+			"!".writeln(point.x, " ", next.empty, " ", point.links.length);
+
+			if(!next.empty) {
+				point.used = true;
+				list ~= [point.x, point.y];
+				lineEnd(next.front);
 			}
 		}
 
-		return list;
+		points.map!(a => cast(int[3])[a.x, a.y, a.used ? 1: 0]).array.writeln;
+
+		return list ~ points.filter!(a => !a.used).map!(a => cast(int[2])[a.x, a.y]).array;
 	}
 }
 
@@ -220,8 +267,6 @@ version(unittest) {
 @("it should detect one point")
 unittest {
 	auto image = Image("samples/1.png");
-	image.writeln;
-
 	FeatureDetector detector;
 
 	auto features = detector.get(image);
@@ -234,8 +279,6 @@ unittest {
 @("it should detect two points")
 unittest {
 	auto image = Image("samples/2.png");
-	image.writeln;
-
 	FeatureDetector detector;
 
 	auto features = detector.get(image);
@@ -250,12 +293,12 @@ unittest {
 
 @("it should detect one horizontal line")
 unittest {
+	"==================".writeln;
 	auto image = Image("samples/3.png");
-	image.writeln;
-
 	FeatureDetector detector;
 
 	auto features = detector.get(image);
+
 	features.writeln;
 
 	features.length.should.be.equal(1);
@@ -265,13 +308,11 @@ unittest {
 
 @("it should detect two horizontal lines")
 unittest {
+	"==================".writeln;
 	auto image = Image("samples/4.png");
-	image.writeln;
-
 	FeatureDetector detector;
 
 	auto features = detector.get(image);
-	features.writeln;
 
 	features.length.should.be.equal(2);
 	features[0][0].should.be.equal(1);
@@ -284,12 +325,10 @@ unittest {
 @("it should split a long horizontal line in two features")
 unittest {
 	auto image = Image("samples/5.png");
-	image.writeln;
 
 	FeatureDetector detector;
 
 	auto features = detector.get(image);
-	features.writeln;
 
 	features.length.should.be.equal(2);
 	features[0][0].should.be.equal(1);
@@ -297,4 +336,18 @@ unittest {
 
 	features[1][0].should.be.equal(6);
 	features[1][1].should.be.equal(1);
+}
+
+@("it should detect one vertical line")
+unittest {
+	"==================".writeln;
+	auto image = Image("samples/6.png");
+	FeatureDetector detector;
+
+	auto features = detector.get(image);
+	features.writeln;
+
+	features.length.should.be.equal(1);
+	features[0][0].should.be.equal(1);
+	features[0][1].should.be.equal(1);
 }
