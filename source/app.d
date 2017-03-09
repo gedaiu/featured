@@ -340,7 +340,6 @@ unittest {
 
 @("it should detect one vertical line")
 unittest {
-	"==================".writeln;
 	auto image = Image("samples/6.png");
 	FeatureDetector detector;
 
@@ -350,4 +349,21 @@ unittest {
 	features.length.should.be.equal(1);
 	features[0][0].should.be.equal(1);
 	features[0][1].should.be.equal(1);
+}
+
+
+@("it should detect two vertical lines")
+unittest {
+	auto image = Image("samples/7.png");
+	FeatureDetector detector;
+
+	auto features = detector.get(image);
+	features.writeln;
+
+	features.length.should.be.equal(2);
+	features[0][0].should.be.equal(1);
+	features[0][1].should.be.equal(1);
+
+	features[1][0].should.be.equal(2);
+	features[1][1].should.be.equal(3);
 }
