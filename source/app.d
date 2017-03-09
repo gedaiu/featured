@@ -182,8 +182,6 @@ struct Image {
 	}
 }
 
-
-
 struct FeatureDetector {
 	class Point {
 		int x;
@@ -209,14 +207,18 @@ struct FeatureDetector {
 			return point.x == x + 1 || point.x == x - 1 || point.y == y + 1 || point.y == y - 1;
 		}
 
-		int[2] lineEnd(ref Point point, int len = 0) {
-			point.x.writeln("?");
-			auto next = point.links.filter!(a => (a.x == point.x+1 && a.y == point.y) || (a.x == point.x && a.y == point.y+1));
+		int[2] lineEnd(ref Point point, int diffX, int diffY, int len = 0) {
+			point.x.writeln(" ", point.y ," ? ", diffX, " ", diffY, " * ", point.links.length);
+
+			auto next = point.links.filter!(a => (a.x == point.x + diffX && a.y == point.y + diffY));
 
 			point.used = true;
 
+			point.links.map!(a => cast(int[2])[a.x+ diffX, a.y+ diffY]).array.writeln(" ", next.empty);
+
+
 			if(!next.empty && len < 3) {
-				return lineEnd(next.front, len+1);
+				return lineEnd(next.front, diffX, diffY, len+1);
 			}
 
 			return [point.x, point.y];
@@ -242,15 +244,21 @@ struct FeatureDetector {
 			}
 		}
 
+
+		points.map!(a => cast(int[2])[a.x, a.y]).array.writeln("************");
+
 		foreach(point; points.filter!(a => !a.used)) {
-			auto next = point.links.filter!(a => (a.x == point.x+1 && a.y == point.y) || (a.x == point.x && a.y == point.y+1));
+			auto next = point.links.filter!(a => (a.x == point.x+1 && a.y == point.y) ||
+																					(a.x == point.x && a.y == point.y+1) ||
+																					(a.x == point.x+1 && a.y == point.y+1) ||
+																					(a.x == point.x+1 && a.y == point.y-1));
 
 			"!".writeln(point.x, " ", next.empty, " ", point.links.length);
 
 			if(!next.empty) {
 				point.used = true;
 				list ~= [point.x, point.y];
-				lineEnd(next.front);
+				lineEnd(next.front, next.front.x - point.x, next.front.y - point.y);
 			}
 		}
 
@@ -351,7 +359,6 @@ unittest {
 	features[0][1].should.be.equal(1);
 }
 
-
 @("it should detect two vertical lines")
 unittest {
 	auto image = Image("samples/7.png");
@@ -366,4 +373,31 @@ unittest {
 
 	features[1][0].should.be.equal(2);
 	features[1][1].should.be.equal(3);
+}
+
+@("it should detect one pincipal diag line")
+unittest {
+	auto image = Image("samples/8.png");
+	FeatureDetector detector;
+
+	auto features = detector.get(image);
+	features.writeln;
+
+	features.length.should.be.equal(1);
+	features[0][0].should.be.equal(1);
+	features[0][1].should.be.equal(1);
+}
+
+@("it should detect one secondary diag line")
+unittest {
+	"===================================".writeln;
+	auto image = Image("samples/9.png");
+	FeatureDetector detector;
+
+	auto features = detector.get(image);
+	features.writeln;
+
+	features.length.should.be.equal(1);
+	features[0][0].should.be.equal(1);
+	features[0][1].should.be.equal(4);
 }
