@@ -113,7 +113,7 @@ auto distance(T)(ref T im, int[2] point1, int[2] point2) {
 		d += pixel1[i] - pixel2[i];
 	}
 
-	return d;
+	return d.abs;
 }
 
 auto distance(T)(T color1, T color2) pure {
@@ -123,5 +123,5 @@ auto distance(T)(T color1, T color2) pure {
 		d += color1[i] - color2[i];
 	}
 
-	return d;
+	return d.abs;
 }
