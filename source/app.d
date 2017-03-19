@@ -7,10 +7,12 @@ import std.range;
 
 import imageformats;
 
-
-void main()
-{
-	writeln("Edit source/app.d to start your project.");
+version(unittest) {}
+else {
+	void main()
+	{
+		writeln("Edit source/app.d to start your project.");
+	}
 }
 
 struct Feature2d {
@@ -301,7 +303,6 @@ unittest {
 
 @("it should detect one horizontal line")
 unittest {
-	"==================".writeln;
 	auto image = Image("samples/3.png");
 	FeatureDetector detector;
 
@@ -316,7 +317,6 @@ unittest {
 
 @("it should detect two horizontal lines")
 unittest {
-	"==================".writeln;
 	auto image = Image("samples/4.png");
 	FeatureDetector detector;
 
@@ -390,7 +390,6 @@ unittest {
 
 @("it should detect one secondary diag line")
 unittest {
-	"===================================".writeln;
 	auto image = Image("samples/9.png");
 	FeatureDetector detector;
 
@@ -400,4 +399,19 @@ unittest {
 	features.length.should.be.equal(1);
 	features[0][0].should.be.equal(1);
 	features[0][1].should.be.equal(4);
+}
+
+
+@("it should detect one white line on black background")
+unittest {
+	auto image = Image("samples/10.png");
+	FeatureDetector detector;
+
+	auto features = detector.get(image);
+
+	features.writeln;
+
+	features.length.should.be.equal(1);
+	features[0][0].should.be.equal(1);
+	features[0][1].should.be.equal(1);
 }

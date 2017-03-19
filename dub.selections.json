@@ -9,6 +9,7 @@
 		"mir-internal": "0.0.2",
 		"openssl": "1.1.5+1.0.1g",
 		"should": {"path":"../should"},
+		"unit-threaded": "0.7.7",
 		"vibe-d": "0.7.29"
 	}
 }
