@@ -51,29 +51,40 @@ struct FeatureDetector {
 		Point[] points;
 		int[2][] list;
 
+
+		import std.datetime;
+
+		auto begin = Clock.currTime;
+
 		foreach(x; 0..image.width) {
+			//auto beginX = Clock.currTime;
+
 			foreach(y; 0..image.height) {
 				if(isFeature(image, x, y)) {
 					auto point = new Point(x, y);
 					auto neighbours = iota(0, points.length)
 						.filter!(i => isNeighbour(points[i], x, y))
-						.map!(i => points[i]).array;
+						.map!(i => points[i])
+						.filter!(a => image[x, y].distance(image[a.x, a.y]) < 50)
+							.array;
 
 					neighbours
-						.filter!(a => image[x, y].distance(image[a.x, a.y]) < 30)
 						.each!(a => a.links ~= point);
 
 					point.links = neighbours;
 					points ~= point;
 				}
 			}
+
+			//writeln("X ", Clock.currTime - beginX);
 		}
 
+		writeln("Found points in ", Clock.currTime - begin);
+
+		begin = Clock.currTime;
 		foreach(point; points.filter!(a => !a.used)) {
 			auto next = point.links.filter!(a => (a.x == point.x+1 && a.y == point.y) ||
-																					(a.x == point.x && a.y == point.y+1) ||
-																					(a.x == point.x+1 && a.y == point.y+1) ||
-																					(a.x == point.x+1 && a.y == point.y-1));
+																					(a.x == point.x && a.y == point.y+1));
 
 			if(!next.empty) {
 				point.used = true;
@@ -82,13 +93,16 @@ struct FeatureDetector {
 			}
 		}
 
+		writeln("grouped points in ", Clock.currTime - begin);
+
+
 		return list ~ points.filter!(a => !a.used).map!(a => cast(int[2])[a.x, a.y]).array;
 	}
 }
 
 bool isFeature(Image image, int x, int y) pure {
 	return [x, y]
-						.neighbours(image.width, image.height)
+						.neighbours(image.width, image.height, 2)
 						.map!(a => image[a[0], a[1]])
 							.array
 							.isFeature(image[x, y]);
@@ -105,28 +119,42 @@ bool isFeature(T)(T[][] image) pure {
 
 bool isFeature(T)(T[] colors, T color) pure {
 
-	debug colors.writeln( " ", color);
+	//debug colors.writeln( " ", color);
 
 	auto distances = colors
 		.map!(a => color.distance(a))
+		.filter!(a => a > 0)
 			.array;
 
-	debug distances.writeln;
+	//debug distances.writeln;
 
-	auto mean = (distances.sum.to!double / distances.length.to!double).abs;
+	auto mean = (distances.sum.to!double / (colors.length.to!double - 1)).abs;
 
-	debug mean.writeln;
+	//debug mean.writeln;
 
-	return mean > 85;
+	return mean > 50 && distances.length > colors.length / 3;
 }
 
 version(unittest) {
 	//import unit_threaded.io;
-	alias writelnUt = writeln;
 	import bdd.base;
+	import std.random;
+	import std.conv;
 
 	static immutable black = [0];
 	static immutable white = [255];
+	static immutable whiteContrast = [200];
+}
+
+@("it should detect a low contrast point")
+unittest {
+	auto data = [
+		[ white, white,         white ],
+		[ white, whiteContrast, white ],
+		[ white, white,         white ]
+	];
+
+	//data.isFeature.should.equal(true);
 }
 
 @("it should detect a black point on white bg as a feature")
@@ -252,10 +280,8 @@ unittest {
 
 	auto features = detector.get(image);
 
-	features.length.should.be.equal(3);
-
-	int[2] feature = [1, 1];
-	features.should.contain(feature);
+	features.length.should.be.equal(1);
+	features.should.contain([1, 1]);
 }
 
 @("it should detect two horizontal lines")
@@ -279,8 +305,6 @@ unittest {
 	FeatureDetector detector;
 
 	auto features = detector.get(image);
-
-	features.writelnUt;
 
 	features.should.contain([1, 1]);
 	features.should.not.contain([2, 1]);
@@ -319,7 +343,7 @@ unittest {
 	features.should.not.contain([2, 4]);
 }
 
-@("it should detect one pincipal diag line")
+@("it should detect all pixels from the pincipal diag line")
 unittest {
 	auto image = Image("samples/8.png");
 	FeatureDetector detector;
@@ -327,22 +351,22 @@ unittest {
 	auto features = detector.get(image);
 
 	features.should.contain([1, 1]);
-	features.should.not.contain([2, 2]);
-	features.should.not.contain([3, 3]);
-	features.should.not.contain([4, 4]);
+	features.should.contain([2, 2]);
+	features.should.contain([3, 3]);
+	features.should.contain([4, 4]);
 }
 
-@("it should detect one secondary diag line")
+@("it should detect all pixels from the secondary diag line")
 unittest {
 	auto image = Image("samples/9.png");
 	FeatureDetector detector;
 
 	auto features = detector.get(image);
-	features.writeln;
+
 	features.should.contain([1, 4]);
-	features.should.not.contain([2, 3]);
-	features.should.not.contain([3, 2]);
-	features.should.not.contain([4, 1]);
+	features.should.contain([2, 3]);
+	features.should.contain([3, 2]);
+	features.should.contain([4, 1]);
 }
 
 @("it should detect one white line on black background")
@@ -352,10 +376,21 @@ unittest {
 
 	auto features = detector.get(image);
 
-	features.writelnUt;
 	features.should.contain([1, 1]);
 	features.should.not.contain([2, 1]);
 	features.should.not.contain([3, 1]);
+}
+
+@("it should detect line inside gradients")
+unittest {
+	auto image = Image("samples/11.png");
+	FeatureDetector detector;
+
+	auto features = detector.get(image);
+
+	//features.should.contain([3, 3]);
+	features.should.not.contain([4, 3]);
+	features.should.not.contain([5, 3]);
 }
 
 unittest {
@@ -364,15 +399,37 @@ unittest {
 	auto image = Image("samples/scene.png");
 	FeatureDetector detector;
 
+	writeln("scene.png", image.type);
 	auto features = detector.get(image);
 
-	auto im = image.raw;
+	auto im = image.rawColor;
 
-	features.writeln;
+	writeln("Found ", features.length, " features");
 
 	foreach(feature; features) {
-		im.circle(feature[0], feature[1], 5);
+		im.circle(feature[0], feature[1], 5, [ uniform(0, 255), uniform(0, 255) ].to!(ubyte[]));
 	}
 
 	write_image("result/scene.png", im.w, im.h, im.pixels);
+}
+
+
+unittest {
+	import imageformats;
+
+	auto image = Image("samples/opencv_scene.png");
+	FeatureDetector detector;
+
+	auto features = detector.get(image);
+
+	writeln("opencv_scene.png", image.type);
+	auto im = image.rawColor;
+
+	writeln("Found ", features.length, " features");
+
+	foreach(feature; features) {
+		im.circle(feature[0], feature[1], 5, [ uniform(0, 255), uniform(0, 255) ].to!(ubyte[]));
+	}
+
+	write_image("result/opencv_scene.png", im.w, im.h, im.pixels);
 }

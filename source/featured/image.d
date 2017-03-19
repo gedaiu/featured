@@ -37,12 +37,36 @@ struct Image {
 		return image.pixels.length / (image.w * image.h);
 	}
 
+	auto type() pure {
+		return image.c;
+	}
+
 	IFImage raw() {
 		return IFImage(image.w, image.h, image.c, image.pixels.dup);
 	}
+
+	IFImage rawColor() {
+		if(image.c == ColFmt.RGBA) {
+			return IFImage(image.w, image.h, ColFmt.RGBA, image.pixels.dup);
+		}
+
+		if(image.c == ColFmt.Y) {
+			return IFImage(image.w, image.h, ColFmt.RGBA, image.pixels.map!(a => cast(ubyte[])[a, a, a, 255]).joiner.array);
+		}
+
+		if(image.c == ColFmt.YA) {
+			return IFImage(image.w, image.h, ColFmt.RGBA, image.pixels.chunks(2).map!(a => cast(ubyte[])[a[0], a[0], a[0], a[1]]).joiner.array);
+		}
+
+		if(image.c == ColFmt.RGB) {
+			return IFImage(image.w, image.h, ColFmt.RGBA, image.pixels.chunks(3).map!(a => cast(ubyte[])[a[0], a[1], a[2], 255]).joiner.array);
+		}
+
+		return IFImage(image.w, image.h, image.c, image.pixels);
+	}
 }
 
-auto plot(T)(ref T im, int x, int y) {
+auto plot(T)(ref T im, int x, int y, ubyte[] color = [ 100 ]) {
 	if(x < 0 || y<0) {
 		return im;
 	}
@@ -54,26 +78,28 @@ auto plot(T)(ref T im, int x, int y) {
 		return im;
 	}
 
-	im.pixels[index] = 100;
+	for(int i=0; i< color.length; i++) {
+		im.pixels[index+i] = color[i];
+	}
 
 	return im;
 }
 
-auto circle(T)(ref T im, int x0, int y0, int radius) {
+auto circle(T)(ref T im, int x0, int y0, int radius, ubyte[] color = [ 100 ]) {
 	int x = radius;
 	int y = 0;
 	int err = 0;
 
 	while (x >= y)
 	{
-		im.plot(x0 + x, y0 + y);
-		im.plot(x0 + y, y0 + x);
-		im.plot(x0 - y, y0 + x);
-		im.plot(x0 - x, y0 + y);
-		im.plot(x0 - x, y0 - y);
-		im.plot(x0 - y, y0 - x);
-		im.plot(x0 + y, y0 - x);
-		im.plot(x0 + x, y0 - y);
+		im.plot(x0 + x, y0 + y, color);
+		im.plot(x0 + y, y0 + x, color);
+		im.plot(x0 - y, y0 + x, color);
+		im.plot(x0 - x, y0 + y, color);
+		im.plot(x0 - x, y0 - y, color);
+		im.plot(x0 - y, y0 - x, color);
+		im.plot(x0 + y, y0 - x, color);
+		im.plot(x0 + x, y0 - y, color);
 
 		if (err <= 0)
 		{
@@ -86,11 +112,11 @@ auto circle(T)(ref T im, int x0, int y0, int radius) {
 	}
 }
 
-int[2][] neighbours(int[2] point, int width = int.max, int height = int.max) pure {
+int[2][] neighbours(int[2] point, int width = int.max, int height = int.max, int distance = 1) pure {
 	int[2][] points;
 
-	foreach(x; point[0]-1..point[0]+2)
-		foreach(y; point[1]-1..point[1]+2) {
+	foreach(x; point[0] - distance..point[0]+distance+1)
+		foreach(y; point[1] - distance..point[1]+distance+1) {
 			if(x == point[0] && y == point[1]) {
 				continue;
 			}
