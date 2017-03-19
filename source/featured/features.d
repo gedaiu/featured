@@ -326,10 +326,10 @@ unittest {
 
 	auto features = detector.get(image);
 
-  features.should.contain([1, 1]);
-  features.should.not.contain([2, 2]);
-  features.should.not.contain([3, 3]);
-  features.should.not.contain([4, 4]);
+	features.should.contain([1, 1]);
+	features.should.not.contain([2, 2]);
+	features.should.not.contain([3, 3]);
+	features.should.not.contain([4, 4]);
 }
 
 @("it should detect one secondary diag line")
@@ -338,11 +338,11 @@ unittest {
 	FeatureDetector detector;
 
 	auto features = detector.get(image);
-  features.writeln;
-  features.should.contain([1, 4]);
-  features.should.not.contain([2, 3]);
-  features.should.not.contain([3, 2]);
-  features.should.not.contain([4, 1]);
+	features.writeln;
+	features.should.contain([1, 4]);
+	features.should.not.contain([2, 3]);
+	features.should.not.contain([3, 2]);
+	features.should.not.contain([4, 1]);
 }
 
 @("it should detect one white line on black background")

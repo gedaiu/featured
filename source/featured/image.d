@@ -37,9 +37,9 @@ struct Image {
 		return image.pixels.length / (image.w * image.h);
 	}
 
-  IFImage raw() {
-    return IFImage(image.w, image.h, image.c, image.pixels.dup);
-  }
+	IFImage raw() {
+		return IFImage(image.w, image.h, image.c, image.pixels.dup);
+	}
 }
 
 auto plot(T)(ref T im, int x, int y) {
@@ -61,29 +61,29 @@ auto plot(T)(ref T im, int x, int y) {
 
 auto circle(T)(ref T im, int x0, int y0, int radius) {
 	int x = radius;
-  int y = 0;
-  int err = 0;
+	int y = 0;
+	int err = 0;
 
-  while (x >= y)
-  {
-    im.plot(x0 + x, y0 + y);
-    im.plot(x0 + y, y0 + x);
-    im.plot(x0 - y, y0 + x);
-    im.plot(x0 - x, y0 + y);
-    im.plot(x0 - x, y0 - y);
-    im.plot(x0 - y, y0 - x);
-    im.plot(x0 + y, y0 - x);
-    im.plot(x0 + x, y0 - y);
+	while (x >= y)
+	{
+		im.plot(x0 + x, y0 + y);
+		im.plot(x0 + y, y0 + x);
+		im.plot(x0 - y, y0 + x);
+		im.plot(x0 - x, y0 + y);
+		im.plot(x0 - x, y0 - y);
+		im.plot(x0 - y, y0 - x);
+		im.plot(x0 + y, y0 - x);
+		im.plot(x0 + x, y0 - y);
 
-    if (err <= 0)
-    {
-      y += 1;
-      err += 2*y + 1;
-    } else {
-      x -= 1;
-      err -= 2*x + 1;
-    }
-  }
+		if (err <= 0)
+		{
+			y += 1;
+			err += 2*y + 1;
+		} else {
+			x -= 1;
+			err -= 2*x + 1;
+		}
+	}
 }
 
 int[2][] neighbours(int[2] point, int width = int.max, int height = int.max) pure {
