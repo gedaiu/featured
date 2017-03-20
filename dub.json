@@ -7,7 +7,7 @@
 		"vibe-d": "0.7.29",
 		"imageformats": "~>6.1.0",
 		"mir-algorithm": "~>0.0.30",
-		"should": {"version": ">=0.1.0", "path": "../should"}
+		"should":  "~>0.1.0"
 	},
 
 	"_configurations": [
